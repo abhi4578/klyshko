@@ -196,9 +196,9 @@ int main(){
      over here we assume we already have .x */
 
     // env variables
-    char* KII_TUPLE_TYPE = "BIT_GFP";
+    char* KII_TUPLE_TYPE = "BIT_GF2N";
     int KII_TUPLES_PER_JOB = 10000;
-    int KII_PLAYER_NUMBER  = 1;
+    int KII_PLAYER_NUMBER  = 0;
     int KII_PLAYER_COUNT = 2;
     
     
@@ -260,11 +260,13 @@ int main(){
                     macKeyShare = arr[pn][1];
                 }
                 printf("%s\n", macKeyShare);
-            } else {
+            } 
+            else {
                 //macKeyShare = readFile("/etc/kii/extra-params/" + to_string(playerNumber) + "_mac_key_share_" + f);
                 macKeyShare = " ";
                 printf("%s\n", macKeyShare);
             }
+            
 
             char dataToWrite[256];
             snprintf(dataToWrite, sizeof(dataToWrite), "%d %s", pc, macKeyShare);
@@ -306,7 +308,6 @@ int main(){
         strndup(seed, 16), // Use strndup to copy first 16 characters of seed
         argsByType(KII_TUPLE_TYPE), 
         argvalue(KII_TUPLE_TYPE,n),
-        //"0,0",
         NULL
         //(char *)malloc(12) // Placeholder for player count as string
     };
@@ -316,7 +317,7 @@ int main(){
     //snprintf(cmd[8], 12, "%d", pc);
 
     // Call the execCommand function with the command
-    execCommand(cmd, 9); 
+    execCommand(cmd, 10); 
     free(seed);
 
 }

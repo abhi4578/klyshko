@@ -112,61 +112,88 @@ void get_random_hex(char *hex_str, int length) {
 
     hex_str[length] = '\0';  // Null-terminate the string
 }
+void writeFile(const char *filename, const char *text) {
+    // Open the file for writing
+    FILE *file = fopen(filename, "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(1); // Exit if there's an error opening the file
+    }
 
-void create_mac_key_shares(int player_count, int player_number) {
-    const char *fields[] = {"p", "2"};
-    for (int i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
-        const char *f = fields[i];
-        const char *bit_width = (strcmp(f, "p") == 0) ? "128" : "40";
-        char folder[256];
-        snprintf(folder, sizeof(folder), "Player-Data/%d-%s-%s", player_count, f, bit_width);
+    // Write the text to the file
+    fprintf(file, "%s", text);
 
-        // Create the directory
-        if (mkdir(folder, 0777) == -1) {
-            perror("Failed to create directory");
-            continue; // Skip to next field
-        }
+    // Close the file
+    fclose(file);
+}
+
+void createDirectory(const char* path) {
+    
+    if (mkdir(path, 0755) == -1) {
+        perror("Error creating directory");
+    }
+    return;
+}
+
+void create_mac_key_shares(int pc, int pn) {
+    
+    const char* arr[2][2];
+
+    arr[0][0] = "-88222337191559387830816715872691188861";
+    arr[0][1] = "f0cf6099e629fd0bda2de3f9515ab72b";
+    arr[1][0] = "1113507028231509545156335486838233835";
+    arr[1][1] = "c347ce3d9e165e4e85221f9da7591d98";
+
+    const char* fields[] = {"p", "2"};
+
+    //check is mac key share being read
+    //const char* homedir = "./";
+    for (size_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i) {
+        const char* f = fields[i];
+        const char* bit_width = (strcmp(f, "p") == 0) ? "128" : "40";
+        
+        //char folder[256];
+        //snprintf(folder, sizeof(folder), "%sPlayer-Data/", homedir);
+       
+        char* folder = "Player-Data/";
+        createDirectory(folder);
+
+        char folderPath[256];
+        snprintf(folderPath, sizeof(folderPath), "%s%d-%s-%s", folder, pc, f, bit_width);
+        createDirectory(folderPath);
         
         printf("Providing parameters for field %s-%s in folder %s\n", f, bit_width, folder);
-
+        //data = exec(cat $varname)
         // Write MAC key shares for all players
-        for (int pn = 0; pn < player_count; pn++) {
+        for (int playerNumber = 0; playerNumber < pc; ++playerNumber) {
             char macKeyShareFile[256];
-            snprintf(macKeyShareFile, sizeof(macKeyShareFile), "%s/Player-MAC-Keys-%s-P%d", folder, f, pn);
-            char macKeyShare[256] = {0};
+            snprintf(macKeyShareFile, sizeof(macKeyShareFile), "%s/Player-MAC-Keys-%s-P%d", folderPath, f, playerNumber);
 
-            // Choose the appropriate MAC key share
-            if (pn == player_number) {
-                FILE *key_file = fopen("/etc/kii/secret-params/mac_key_share_p", "r");
-                if (key_file) {
-                    fgets(macKeyShare, sizeof(macKeyShare), key_file);
-                    fclose(key_file);
-                } else {
-                    perror("Error opening MAC key share file for player");
-                    continue; // Skip to next player
-                }
-            } else {
-                char extra_key_file_path[256];
-                snprintf(extra_key_file_path, sizeof(extra_key_file_path), "/etc/kii/extra-params/%d_mac_key_share_%s", pn, f);
-                FILE *key_file = fopen(extra_key_file_path, "r");
-                if (key_file) {
-                    fgets(macKeyShare, sizeof(macKeyShare), key_file);
-                    fclose(key_file);
-                } else {
-                    perror("Error opening extra MAC key share file");
-                    continue; // Skip to next player
-                }
-            }
+            const char* macKeyShare;
 
-            // Write the MAC key share to the file
-            FILE *output_file = fopen(macKeyShareFile, "w");
-            if (output_file) {
-                fprintf(output_file, "%d %s", player_count, macKeyShare);
-                fclose(output_file);
-                printf("MAC key share for player %d written to %s\n", pn, macKeyShareFile);
-            } else {
-                perror("Error writing MAC key share file");
+            if (playerNumber == pn) {
+                //macKeyShare = readFile("/etc/kii/secret-params/mac_key_share_" + f);
+                if(f == "p"){
+                    macKeyShare = arr[pn][0];
+                }
+                else{
+                    macKeyShare = arr[pn][1];
+                }
+                printf("%s\n", macKeyShare);
+            } 
+            else {
+                //macKeyShare = readFile("/etc/kii/extra-params/" + to_string(playerNumber) + "_mac_key_share_" + f);
+                macKeyShare = " ";
+                printf("%s\n", macKeyShare);
             }
+            
+
+            char dataToWrite[256];
+            snprintf(dataToWrite, sizeof(dataToWrite), "%d %s", pc, macKeyShare);
+            writeFile(macKeyShareFile, dataToWrite);
+
+            printf("MAC key share for player %d written to %s\n", playerNumber, macKeyShareFile);
+            
         }
     }
 }
@@ -223,7 +250,7 @@ int main(int argc, char *argv[]) {
 
     int player_count = atoi(pc);
     int player_number = atoi(pn);
-    //create_mac_key_shares(player_count, player_number);
+    create_mac_key_shares(player_count, player_number);
 
     // Step 5: Generate seed 
 
@@ -253,7 +280,7 @@ int main(int argc, char *argv[]) {
     printf("\n");
 
     // Step 7: Execute ./Fake-Offline.x using execvp
-    execvp(args[0], args);
+    //execvp(args[0], args);
 
     // If execvp fails:
     perror("execvp failed");
