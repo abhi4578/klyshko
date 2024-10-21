@@ -127,6 +127,32 @@ void writeFile(const char *filename, const char *text) {
     fclose(file);
 }
 
+char* readFile(const char *file_path) {
+    FILE *file = fopen(file_path, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return NULL;
+    }
+
+    // Allocate a buffer to hold the file contents
+    fseek(file, 0, SEEK_END);  // Move to the end of the file
+    long file_size = ftell(file);  // Get the current file pointer position (file size)
+    fseek(file, 0, SEEK_SET);  // Move back to the start of the file
+
+    char *content = malloc(file_size + 1);  // Allocate memory for file contents
+    if (content == NULL) {
+        perror("Error allocating memory");
+        fclose(file);
+        return NULL;
+    }
+
+    fread(content, 1, file_size, file);  // Read file contents into buffer
+    content[file_size] = '\0';  // Null-terminate the string
+
+    fclose(file);
+    return content;  // Return the buffer
+}
+
 void createDirectory(const char* path) {
     
     if (mkdir(path, 0755) == -1) {
@@ -169,21 +195,26 @@ void create_mac_key_shares(int pc, int pn) {
             char macKeyShareFile[256];
             snprintf(macKeyShareFile, sizeof(macKeyShareFile), "%s/Player-MAC-Keys-%s-P%d", folderPath, f, playerNumber);
 
-            const char* macKeyShare;
+            char* macKeyShare;
 
             if (playerNumber == pn) {
-                //macKeyShare = readFile("/etc/kii/secret-params/mac_key_share_" + f);
-                if(f == "p"){
+                char file_path[256];
+                sprintf(file_path, "etc/kii/secret-params/mac_key_share_%s",f);
+                macKeyShare = readFile(file_path);
+                /**if(f == "p"){
                     macKeyShare = arr[pn][0];
                 }
                 else{
                     macKeyShare = arr[pn][1];
                 }
+                */
                 printf("%s\n", macKeyShare);
             } 
             else {
-                //macKeyShare = readFile("/etc/kii/extra-params/" + to_string(playerNumber) + "_mac_key_share_" + f);
-                macKeyShare = " ";
+                char file_path[256];
+                sprintf(file_path, "etc/kii/extra-params/%d_mac_key_share_%s", playerNumber, f);
+                macKeyShare = readFile(file_path);
+                //macKeyShare = "2";
                 printf("%s\n", macKeyShare);
             }
             
@@ -220,15 +251,7 @@ int main(int argc, char *argv[]) {
         pc = getenv("KII_PLAYER_COUNT");
         tuple_type_str = getenv("KII_TUPLE_TYPE");
         //prime = getenv("PRIME");
-        char prime[128] = {0};
-        FILE *prime_file = fopen("/etc/kii/params/prime", "r");
-        if (prime_file) {
-            fscanf(prime_file, "%127s", prime);  // Read prime into buffer
-            fclose(prime_file);
-        } else {
-            perror("Error opening prime file");
-            return 1;
-        }
+        prime = readFile("etc/kii/params/prime");
         job_id = getenv("KII_JOB_ID");
         tuple_file = getenv("KII_TUPLE_FILE");
     }
@@ -280,7 +303,7 @@ int main(int argc, char *argv[]) {
     printf("\n");
 
     // Step 7: Execute ./Fake-Offline.x using execvp
-    //execvp(args[0], args);
+    execvp(args[0], args);
 
     // If execvp fails:
     perror("execvp failed");
