@@ -156,7 +156,7 @@ char* readFile(const char *file_path) {
 void createDirectory(const char* path) {
     
     if (mkdir(path, 0755) == -1) {
-        perror("Error creating directory");
+        printf("Error creating directory");
     }
     return;
 }
@@ -201,14 +201,16 @@ void create_mac_key_shares(int pc, int pn) {
                 char file_path[256];
                 sprintf(file_path, "etc/kii/secret-params/mac_key_share_%s",f);
                 macKeyShare = readFile(file_path);
-                /**if(f == "p"){
+                /** 
+                if(f == "p"){
                     macKeyShare = arr[pn][0];
                 }
                 else{
                     macKeyShare = arr[pn][1];
                 }
-                */
+                
                 printf("%s\n", macKeyShare);
+                */
             } 
             else {
                 char file_path[256];
@@ -229,19 +231,22 @@ void create_mac_key_shares(int pc, int pn) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main() {
     // Step 1: Declare these variables at the start
+    printf("Program starts");
     char *n, *pn, *pc, *tuple_type_str, *prime, *job_id, *tuple_file;
+    printf("step 1 complete");
 
     // Step 2: Check command line input
-    int input_value = atoi(argv[1]);
+    int input_value = 0;
     if (input_value == 0) {
         // Hardcoded values if input_value is 0
         n = "10000";
         pn = "1";
         pc = "2";
         tuple_type_str = "BIT_GFP";
-        prime = "198766463529478683931867765928436695041";
+        //prime = "198766463529478683931867765928436695041";
+        prime = readFile("etc/kii/params/prime");
         job_id = "123456";
         tuple_file = "file.txt";
     } else {
@@ -255,6 +260,7 @@ int main(int argc, char *argv[]) {
         job_id = getenv("KII_JOB_ID");
         tuple_file = getenv("KII_TUPLE_FILE");
     }
+    printf("step 2 complete");
 
     // Step 3: Convert tuple type string to enum
     TupleType tuple_type = getTupleType(tuple_type_str);
@@ -262,6 +268,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unknown tuple type: %s\n", tuple_type_str);
         return 1;
     }
+    printf("step 3 complete");
 
     // Step 4: Prepare the second argument based on tuple type
     char arg2[256] = {0};
@@ -270,10 +277,12 @@ int main(int argc, char *argv[]) {
     } else {
         snprintf(arg2, sizeof(arg2), arg2FormatByType[tuple_type], n);
     }
+    printf("step 4 complete");
 
     int player_count = atoi(pc);
     int player_number = atoi(pn);
     create_mac_key_shares(player_count, player_number);
+    printf("mac key created");
 
     // Step 5: Generate seed 
 
@@ -282,7 +291,7 @@ int main(int argc, char *argv[]) {
     //we will get a seed from other TEE and add that 
     const char* hex2 = "1a2b3c4d5e6f7081";
     char* seed = addHex(hex_str, hex2);
-
+    printf("step 5 complete");
 
     // Step 6: Prepare arguments for execvp
     char *args[] = {
@@ -295,6 +304,7 @@ int main(int argc, char *argv[]) {
         pc,                      // Player count
         NULL                     // Terminate with NULL
     };
+    printf("step 6 complete");
 
     // Debug print
     for (int i = 0; args[i] != NULL; ++i) {
@@ -304,8 +314,10 @@ int main(int argc, char *argv[]) {
 
     // Step 7: Execute ./Fake-Offline.x using execvp
     execvp(args[0], args);
+    printf("step 7 complete");
 
     // If execvp fails:
     perror("execvp failed");
+    
     return 1;
 }

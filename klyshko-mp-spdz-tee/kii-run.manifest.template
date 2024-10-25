@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Manifest for kii-run SGX application
+loader.entrypoint = "file:{{ gramine.libos }}"
+libos.entrypoint = "/kii-run"
+loader.log_level = "{{ log_level }}"
+
+loader.env.LD_LIBRARY_PATH = "/lib:/lib2"
+loader.env.LC_ALL = "C"
+loader.insecure__use_cmdline_argv = true
+loader.insecure__use_host_env = true
+
+fs.mounts = [
+  { path = "/lib", uri = "file:{{ gramine.runtimedir() }}" },
+  { path = "/kii-run", uri = "file:kii-run" },
+  { path = "/Player-Data", uri="file:Player-Data" },
+  { path = "/etc/kii", uri="file:etc/kii/" },
+  { path = "/home/azureuser/mp-spdz-642d11f_no-offline", uri="file:/home/azureuser/mp-spdz-642d11f_no-offline"},
+  { path = "/lib2", uri="file:/lib/x86_64-linux-gnu/"}
+]
+
+sgx.debug = true
+sgx.edmm_enable = {{ 'true' if env.get('EDMM', '0') == '1' else 'false' }}
+
+# If your application needs to load other files or libraries, list them here
+sgx.trusted_files = [
+  "file:kii-run",
+  "file:{{ gramine.libos }}",
+  "file:Fake-Offline.x",
+  "file:{{ gramine.runtimedir() }}/",
+  "file:./etc/kii/params/prime",
+  "file:./etc/kii/secret-params/",
+  "file:./etc/kii/extra-params/",
+  "file:/home/azureuser/mp-spdz-642d11f_no-offline/",
+  "file:/lib/",
+]
+
+# Files that your program will access
+sgx.allowed_files = [
+    "file:./Player-Data",
+    "file:./etc/kii"
+]

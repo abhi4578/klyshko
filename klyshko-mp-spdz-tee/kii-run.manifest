@@ -1,0 +1,69 @@
+[loader]
+entrypoint = "file:/usr/lib/x86_64-linux-gnu/gramine/libsysdb.so"
+log_level = "error"
+insecure__use_cmdline_argv = true
+insecure__use_host_env = true
+
+[loader.env]
+LD_LIBRARY_PATH = "/lib:/lib2"
+LC_ALL = "C"
+
+[libos]
+entrypoint = "/kii-run"
+
+[[fs.mounts]]
+path = "/lib"
+uri = "file:/usr/lib/x86_64-linux-gnu/gramine/runtime/glibc"
+
+[[fs.mounts]]
+path = "/kii-run"
+uri = "file:kii-run"
+
+[[fs.mounts]]
+path = "/Player-Data"
+uri = "file:Player-Data"
+
+[[fs.mounts]]
+path = "/etc/kii"
+uri = "file:etc/kii/"
+
+[[fs.mounts]]
+path = "/home/azureuser/mp-spdz-642d11f_no-offline"
+uri = "file:/home/azureuser/mp-spdz-642d11f_no-offline"
+
+[[fs.mounts]]
+path = "/lib2"
+uri = "file:/lib/x86_64-linux-gnu/"
+
+[sgx]
+debug = true
+edmm_enable = false
+trusted_files = [
+    { uri = "file:kii-run" },
+    { uri = "file:/usr/lib/x86_64-linux-gnu/gramine/libsysdb.so" },
+    { uri = "file:Fake-Offline.x" },
+    { uri = "file:/usr/lib/x86_64-linux-gnu/gramine/runtime/glibc/" },
+    { uri = "file:./etc/kii/params/prime" },
+    { uri = "file:./etc/kii/secret-params/" },
+    { uri = "file:./etc/kii/extra-params/" },
+    { uri = "file:/home/azureuser/mp-spdz-642d11f_no-offline/" },
+    { uri = "file:/lib/" },
+]
+allowed_files = [
+    "file:./Player-Data",
+    "file:./etc/kii",
+]
+max_threads = 4
+isvprodid = 0
+isvsvn = 0
+remote_attestation = "none"
+enable_stats = false
+enclave_size = "256M"
+use_exinfo = false
+
+[sgx.cpu_features]
+avx = "unspecified"
+avx512 = "unspecified"
+amx = "unspecified"
+mpx = "disabled"
+pkru = "disabled"

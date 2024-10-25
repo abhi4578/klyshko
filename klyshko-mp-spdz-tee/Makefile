@@ -1,7 +1,8 @@
-# Compiler flags
+# Copyright (C) 2023 Gramine contributors
+# SPDX-License-Identifier: BSD-3-Clause
+
 CFLAGS = -Wall -Wextra
 
-# Gramine log level based on debug or production mode
 ifeq ($(DEBUG),1)
 GRAMINE_LOG_LEVEL = debug
 CFLAGS += -g
@@ -10,59 +11,60 @@ GRAMINE_LOG_LEVEL = error
 CFLAGS += -O3
 endif
 
-# Targets that should always run
-.PHONY: all clean distclean check
-
-# Main target to build everything
-all: file_2 file_2.manifest
+.PHONY: all
+all: kii-run kii-run.manifest
 ifeq ($(SGX),1)
-all: file_2.manifest.sgx file_2.sig
+all: kii-run.manifest.sgx kii-run.sig
 endif
 
-# Rule for compiling the C++ program
-file_2: file_2.o
-	$(CXX) $(CFLAGS) -o $@ $^
+kii-run: kii-run.o
 
-# Rule for compiling object file from the source
-file_2.o: file_2.cpp
-	$(CXX) $(CFLAGS) -c -o $@ $<
+kii-run.o: kii-run.c
 
-# Rule for generating the manifest file from the template
-file_2.manifest: file_2.manifest.template file_2
+kii-run.manifest: kii-run.manifest.template
 	gramine-manifest \
 		-Dlog_level=$(GRAMINE_LOG_LEVEL) \
 		$< $@
 	gramine-manifest-check $@
 
-# Workaround for signing Gramine manifest to prevent concurrency issues
-file_2.sig file_2.manifest.sgx: sgx_sign
+# gramine-sgx-sign generates both a .sig file and a .manifest.sgx file. This is somewhat
+# hard to express properly in Make. The simple solution would be to use
+# "Rules with Grouped Targets" (`&:`), however make on Ubuntu <= 20.04 doesn't support it.
+#
+# Simply using a normal rule with "two targets" is equivalent to creating separate rules
+# for each of the targets, and when using `make -j`, this might cause two instances
+# of gramine-sgx-sign to get launched simultaneously, potentially breaking the build.
+#
+# As a workaround, we use a dummy intermediate target, and mark both files as depending on it, to
+# get the dependency graph we want. We mark this dummy target as .INTERMEDIATE, which means
+# that make will consider the source tree up-to-date even if the sgx_sign file doesn't exist,
+# as long as the other dependencies check out. This is in contrast to .PHONY, which would
+# be rebuilt on every invocation of make.
+kii-run.sig kii-run.manifest.sgx: sgx_sign
 	@:
 
 .INTERMEDIATE: sgx_sign
-sgx_sign: file_2.manifest
+sgx_sign: kii-run.manifest kii-run
 	gramine-sgx-sign \
 		--manifest $< \
 		--output $<.sgx
 	gramine-manifest-check $<.sgx
 
-# Determine whether to run in SGX mode or direct mode
 ifeq ($(SGX),)
 GRAMINE = gramine-direct
 else
 GRAMINE = gramine-sgx
 endif
 
-# Rule to test the application after building it
+.PHONY: check
 check: all
-	$(GRAMINE) file_2 > OUTPUT
-	# Optionally, you can check if output is as expected
-	# echo "Expected Output" | diff OUTPUT -
+	$(GRAMINE) kii-run > OUTPUT
+	echo "Hello, world" | diff OUTPUT -
 	@echo "[ Success ]"
 
-# Rule for cleaning up generated files
+.PHONY: clean
 clean:
-	$(RM) *.token *.sig *.manifest.sgx *.manifest file_2.o file_2 OUTPUT
+	$(RM) *.token *.sig *.manifest.sgx *.manifest kii-run.o kii-run OUTPUT
 
-# Rule for deep cleaning, including the compiled executable
+.PHONY: distclean
 distclean: clean
-	$(RM) file_2
