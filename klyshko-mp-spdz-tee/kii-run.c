@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <errno.h>
+
 
 // Step 1: Define an enumeration for tuple types
 typedef enum {
@@ -45,7 +49,6 @@ const char *arg2FormatByType[TUPLE_TYPE_COUNT] = {
     "%s,0"        // MULTIPLICATION_TRIPLE_GF2N
 };
 
-// Similarly, you can map tuple types to file paths
 const char *tupleFileByType[TUPLE_TYPE_COUNT] = {
     "%s-p-128/Bits-p-P%s",   // BIT_GFP
     "%s-2-40/Bits-2-P%s",    // BIT_GF2N
@@ -116,7 +119,7 @@ void writeFile(const char *filename, const char *text) {
     // Open the file for writing
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
-        perror("Error opening file");
+        perror("Error openin file while writing");
         exit(1); // Exit if there's an error opening the file
     }
 
@@ -130,7 +133,7 @@ void writeFile(const char *filename, const char *text) {
 char* readFile(const char *file_path) {
     FILE *file = fopen(file_path, "r");
     if (file == NULL) {
-        perror("Error opening file");
+        perror("Error opening file while reading");
         return NULL;
     }
 
@@ -182,7 +185,7 @@ void create_mac_key_shares(int pc, int pn) {
         //snprintf(folder, sizeof(folder), "%sPlayer-Data/", homedir);
        
         char* folder = "Player-Data/";
-        createDirectory(folder);
+        //createDirectory(folder);
 
         char folderPath[256];
         snprintf(folderPath, sizeof(folderPath), "%s%d-%s-%s", folder, pc, f, bit_width);
@@ -200,8 +203,8 @@ void create_mac_key_shares(int pc, int pn) {
             if (playerNumber == pn) {
                 char file_path[256];
                 sprintf(file_path, "etc/kii/secret-params/mac_key_share_%s",f);
-                macKeyShare = readFile(file_path);
-                /** 
+                //macKeyShare = readFile(file_path);
+                
                 if(f == "p"){
                     macKeyShare = arr[pn][0];
                 }
@@ -210,18 +213,20 @@ void create_mac_key_shares(int pc, int pn) {
                 }
                 
                 printf("%s\n", macKeyShare);
-                */
+                
             } 
             else {
                 char file_path[256];
                 sprintf(file_path, "etc/kii/extra-params/%d_mac_key_share_%s", playerNumber, f);
-                macKeyShare = readFile(file_path);
-                //macKeyShare = "2";
+                //macKeyShare = readFile(file_path);
+                macKeyShare = "2";
                 printf("%s\n", macKeyShare);
             }
             
 
             char dataToWrite[256];
+
+            printf("----- TRYING TO WRITE for MAC key share for player %d written to %s\n", playerNumber, macKeyShareFile);
             snprintf(dataToWrite, sizeof(dataToWrite), "%d %s", pc, macKeyShare);
             writeFile(macKeyShareFile, dataToWrite);
 
@@ -231,18 +236,69 @@ void create_mac_key_shares(int pc, int pn) {
     }
 }
 
-int main() {
+void write_test_to_file() {
+    // Directory and file paths
+    const char *directory = "Player-Data";
+    const char *file_path = "Player-Data/test";
+
+    // Ensure the directory exists
+    struct stat st = {0};
+    /*
+    if (stat(directory, &st) == -1) {
+        if (mkdir(directory, 0755) != 0) {
+            perror("Error creating directory");
+            return;
+        }
+    }*/
+    printf("LINE 253");
+    // Open the file for writing (creates it if it doesn't exist)
+    int fd = open(file_path, O_WRONLY | O_CREAT, 0644);
+    if (fd == -1) {
+        perror("line 257 Error opening file");
+        return;
+    }
+    printf("LINE 260");
+
+    // Initialize a file lock structure
+    struct flock lock;
+    memset(&lock, 0, sizeof(lock));
+    lock.l_type = F_WRLCK;     // Set write lock
+    lock.l_whence = SEEK_SET;  // Start from the beginning of the file
+
+    // Apply the file lock
+    if (fcntl(fd, F_SETLKW, &lock) == -1) {
+        perror("Error locking file");
+        close(fd);
+        return;
+    }
+
+    // Write "test" to the file using file descriptor
+    if (write(fd, "test", 4) == -1) {
+        perror("Error writing to file");
+    }
+
+    // Release the lock
+    lock.l_type = F_UNLCK;
+    if (fcntl(fd, F_SETLK, &lock) == -1) {
+        perror("Error unlocking file");
+    }
+
+    // Close the file
+    close(fd);
+}
+
+void main() {
     // Step 1: Declare these variables at the start
     printf("Program starts");
     char *n, *pn, *pc, *tuple_type_str, *prime, *job_id, *tuple_file;
     printf("step 1 complete");
-
+    // write_test_to_file();
     // Step 2: Check command line input
     int input_value = 0;
     if (input_value == 0) {
         // Hardcoded values if input_value is 0
         n = "10000";
-        pn = "1";
+        pn = "0";
         pc = "2";
         tuple_type_str = "BIT_GFP";
         //prime = "198766463529478683931867765928436695041";
@@ -281,17 +337,19 @@ int main() {
 
     int player_count = atoi(pc);
     int player_number = atoi(pn);
-    create_mac_key_shares(player_count, player_number);
+    //create_mac_key_shares(player_count, player_number);
     printf("mac key created");
 
     // Step 5: Generate seed 
 
     char hex_str[17];
-    get_random_hex(hex_str, 16);
+    /**get_random_hex(hex_str, 16);
     //we will get a seed from other TEE and add that 
     const char* hex2 = "1a2b3c4d5e6f7081";
     char* seed = addHex(hex_str, hex2);
-    printf("step 5 complete");
+    */
+    char* seed = "1a2b3c4d5e6f7081";
+    printf("step 5 complete:");
 
     // Step 6: Prepare arguments for execvp
     char *args[] = {
@@ -319,5 +377,4 @@ int main() {
     // If execvp fails:
     perror("execvp failed");
     
-    return 1;
 }
