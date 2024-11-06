@@ -6,7 +6,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-
 // Step 1: Define an enumeration for tuple types
 typedef enum {
     BIT_GFP,
@@ -115,12 +114,16 @@ void get_random_hex(char *hex_str, int length) {
 
     hex_str[length] = '\0';  // Null-terminate the string
 }
+
 void writeFile(const char *filename, const char *text) {
     // Open the file for writing
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
         perror("Error openin file while writing");
         exit(1); // Exit if there's an error opening the file
+    }
+    else{
+        perror("opened successfully");
     }
 
     // Write the text to the file
@@ -130,69 +133,28 @@ void writeFile(const char *filename, const char *text) {
     fclose(file);
 }
 
-char* readFile(const char *file_path) {
-    FILE *file = fopen(file_path, "r");
-    if (file == NULL) {
-        perror("Error opening file while reading");
-        return NULL;
-    }
-
-    // Allocate a buffer to hold the file contents
-    fseek(file, 0, SEEK_END);  // Move to the end of the file
-    long file_size = ftell(file);  // Get the current file pointer position (file size)
-    fseek(file, 0, SEEK_SET);  // Move back to the start of the file
-
-    char *content = malloc(file_size + 1);  // Allocate memory for file contents
-    if (content == NULL) {
-        perror("Error allocating memory");
-        fclose(file);
-        return NULL;
-    }
-
-    fread(content, 1, file_size, file);  // Read file contents into buffer
-    content[file_size] = '\0';  // Null-terminate the string
-
-    fclose(file);
-    return content;  // Return the buffer
-}
-
-void createDirectory(const char* path) {
-    
-    if (mkdir(path, 0755) == -1) {
-        printf("Error creating directory");
-    }
-    return;
-}
-
 void create_mac_key_shares(int pc, int pn) {
     
     const char* arr[2][2];
 
-    arr[0][0] = "-88222337191559387830816715872691188861";
-    arr[0][1] = "f0cf6099e629fd0bda2de3f9515ab72b";
-    arr[1][0] = "1113507028231509545156335486838233835";
-    arr[1][1] = "c347ce3d9e165e4e85221f9da7591d98";
+    arr[0][0] = getenv("MAC_KEY_SHARE_0_P");
+    arr[0][1] = getenv("MAC_KEY_SHARE_0_N");
+    arr[1][0] = getenv("MAC_KEY_SHARE_1_P");
+    arr[1][1] = getenv("MAC_KEY_SHARE_1_N");
 
     const char* fields[] = {"p", "2"};
 
-    //check is mac key share being read
-    //const char* homedir = "./";
     for (size_t i = 0; i < sizeof(fields) / sizeof(fields[0]); ++i) {
         const char* f = fields[i];
         const char* bit_width = (strcmp(f, "p") == 0) ? "128" : "40";
-        
-        //char folder[256];
-        //snprintf(folder, sizeof(folder), "%sPlayer-Data/", homedir);
        
         char* folder = "Player-Data/";
-        //createDirectory(folder);
 
         char folderPath[256];
         snprintf(folderPath, sizeof(folderPath), "%s%d-%s-%s", folder, pc, f, bit_width);
-        createDirectory(folderPath);
         
         printf("Providing parameters for field %s-%s in folder %s\n", f, bit_width, folder);
-        //data = exec(cat $varname)
+    
         // Write MAC key shares for all players
         for (int playerNumber = 0; playerNumber < pc; ++playerNumber) {
             char macKeyShareFile[256];
@@ -201,10 +163,7 @@ void create_mac_key_shares(int pc, int pn) {
             char* macKeyShare;
 
             if (playerNumber == pn) {
-                char file_path[256];
-                sprintf(file_path, "etc/kii/secret-params/mac_key_share_%s",f);
-                //macKeyShare = readFile(file_path);
-                
+                char file_path[256];               
                 if(f == "p"){
                     macKeyShare = arr[pn][0];
                 }
@@ -217,9 +176,7 @@ void create_mac_key_shares(int pc, int pn) {
             } 
             else {
                 char file_path[256];
-                sprintf(file_path, "etc/kii/extra-params/%d_mac_key_share_%s", playerNumber, f);
-                //macKeyShare = readFile(file_path);
-                macKeyShare = "2";
+                macKeyShare = "88222337191559387830816715872691188862";
                 printf("%s\n", macKeyShare);
             }
             
@@ -236,87 +193,20 @@ void create_mac_key_shares(int pc, int pn) {
     }
 }
 
-void write_test_to_file() {
-    // Directory and file paths
-    const char *directory = "Player-Data";
-    const char *file_path = "Player-Data/test";
-
-    // Ensure the directory exists
-    struct stat st = {0};
-    /*
-    if (stat(directory, &st) == -1) {
-        if (mkdir(directory, 0755) != 0) {
-            perror("Error creating directory");
-            return;
-        }
-    }*/
-    printf("LINE 253");
-    // Open the file for writing (creates it if it doesn't exist)
-    int fd = open(file_path, O_WRONLY | O_CREAT, 0644);
-    if (fd == -1) {
-        perror("line 257 Error opening file");
-        return;
-    }
-    printf("LINE 260");
-
-    // Initialize a file lock structure
-    struct flock lock;
-    memset(&lock, 0, sizeof(lock));
-    lock.l_type = F_WRLCK;     // Set write lock
-    lock.l_whence = SEEK_SET;  // Start from the beginning of the file
-
-    // Apply the file lock
-    if (fcntl(fd, F_SETLKW, &lock) == -1) {
-        perror("Error locking file");
-        close(fd);
-        return;
-    }
-
-    // Write "test" to the file using file descriptor
-    if (write(fd, "test", 4) == -1) {
-        perror("Error writing to file");
-    }
-
-    // Release the lock
-    lock.l_type = F_UNLCK;
-    if (fcntl(fd, F_SETLK, &lock) == -1) {
-        perror("Error unlocking file");
-    }
-
-    // Close the file
-    close(fd);
-}
 
 void main() {
-    // Step 1: Declare these variables at the start
     printf("Program starts");
+    // Step 1: Declare these variables at the start
     char *n, *pn, *pc, *tuple_type_str, *prime, *job_id, *tuple_file;
-    printf("step 1 complete");
-    // write_test_to_file();
-    // Step 2: Check command line input
-    int input_value = 0;
-    if (input_value == 0) {
-        // Hardcoded values if input_value is 0
-        n = "10000";
-        pn = "0";
-        pc = "2";
-        tuple_type_str = "BIT_GFP";
-        //prime = "198766463529478683931867765928436695041";
-        prime = readFile("etc/kii/params/prime");
-        job_id = "123456";
-        tuple_file = "file.txt";
-    } else {
-        // Fetch from environment variables if input_value != 0
-        n = getenv("KII_TUPLES_PER_JOB");
-        pn = getenv("KII_PLAYER_NUMBER");
-        pc = getenv("KII_PLAYER_COUNT");
-        tuple_type_str = getenv("KII_TUPLE_TYPE");
-        //prime = getenv("PRIME");
-        prime = readFile("etc/kii/params/prime");
-        job_id = getenv("KII_JOB_ID");
-        tuple_file = getenv("KII_TUPLE_FILE");
-    }
-    printf("step 2 complete");
+
+    // Fetch from environment variables if input_value != 0
+    n = getenv("KII_TUPLES_PER_JOB");
+    pn = getenv("KII_PLAYER_NUMBER");
+    pc = getenv("KII_PLAYER_COUNT");
+    tuple_type_str = getenv("KII_TUPLE_TYPE");
+    prime = getenv("PRIME");
+    job_id = getenv("KII_JOB_ID");
+    tuple_file = getenv("KII_TUPLE_FILE");
 
     // Step 3: Convert tuple type string to enum
     TupleType tuple_type = getTupleType(tuple_type_str);
@@ -324,7 +214,6 @@ void main() {
         fprintf(stderr, "Unknown tuple type: %s\n", tuple_type_str);
         return 1;
     }
-    printf("step 3 complete");
 
     // Step 4: Prepare the second argument based on tuple type
     char arg2[256] = {0};
@@ -335,23 +224,20 @@ void main() {
     }
     printf("step 4 complete");
 
+    //Step 5: create mac_key_shares
     int player_count = atoi(pc);
     int player_number = atoi(pn);
-    //create_mac_key_shares(player_count, player_number);
+    create_mac_key_shares(player_count, player_number);
     printf("mac key created");
 
-    // Step 5: Generate seed 
-
+    // Step 6: Generate seed 
     char hex_str[17];
-    /**get_random_hex(hex_str, 16);
+    get_random_hex(hex_str, 16);
     //we will get a seed from other TEE and add that 
     const char* hex2 = "1a2b3c4d5e6f7081";
     char* seed = addHex(hex_str, hex2);
-    */
-    char* seed = "1a2b3c4d5e6f7081";
-    printf("step 5 complete:");
 
-    // Step 6: Prepare arguments for execvp
+    // Step 7: Prepare arguments for execvp
     char *args[] = {
         "./Fake-Offline.x",
         "-d", "0",
@@ -362,7 +248,6 @@ void main() {
         pc,                      // Player count
         NULL                     // Terminate with NULL
     };
-    printf("step 6 complete");
 
     // Debug print
     for (int i = 0; args[i] != NULL; ++i) {
@@ -370,11 +255,9 @@ void main() {
     }
     printf("\n");
 
-    // Step 7: Execute ./Fake-Offline.x using execvp
+    // Step 8: Execute ./Fake-Offline.x using execvp
     execvp(args[0], args);
-    printf("step 7 complete");
 
     // If execvp fails:
-    perror("execvp failed");
-    
+    perror("execvp failed");   
 }
