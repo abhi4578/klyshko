@@ -119,7 +119,7 @@ void writeFile(const char *filename, const char *text) {
     // Open the file for writing
     FILE *file = fopen(filename, "w");
     if (file == NULL) {
-        perror("Error openin file while writing");
+        printf("Error openin file while writing %s", filename);
         exit(1); // Exit if there's an error opening the file
     }
     else{
@@ -137,7 +137,7 @@ void create_mac_key_shares(int pc, int pn) {
     
     const char* arr[2][2];
 
-    arr[0][0] = getenv("MAC_KEY_SHARE_0_P");
+    arr[0][0] = "-88222337191559387830816715872691188861";
     arr[0][1] = getenv("MAC_KEY_SHARE_0_N");
     arr[1][0] = getenv("MAC_KEY_SHARE_1_P");
     arr[1][1] = getenv("MAC_KEY_SHARE_1_N");
