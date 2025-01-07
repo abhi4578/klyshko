@@ -57,7 +57,7 @@ ENV KII_PLAYER_COUNT="2"
 ENV KII_TUPLE_TYPE="BIT_GFP"
 ENV PRIME="198766463529478683931867765928436695041"
 ENV KII_JOB_ID="123456"
-ENV KII_TUPLE_FILE="file.txt"
+ENV KII_TUPLE_FILE="/kii/tuples"
 
 COPY azure_sgx_qcnl.conf /etc/sgx_default_qcnl.conf
 
@@ -72,7 +72,7 @@ RUN cp libSPDZ.so /usr/local/lib/
 RUN gramine-sgx-gen-private-key
 
 
-RUN make clean && make SGX=1
+# RUN make clean && make SGX=1
 
 # Remove the Player-Data directory if it exists, recreate it, and set up subdirectories
 RUN rm -rf Player-Data && \

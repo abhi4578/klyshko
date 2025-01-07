@@ -255,8 +255,29 @@ void main() {
     }
     printf("\n");
 
+    int length = sizeof(args) / sizeof(args[0]);
+
+     // Join cmd array into a single command string
+    char cmdString[512] = {0}; // Buffer to hold the concatenated cmd
+    for (int i = 0; i < length  ; ++i) {
+        if (args[i] != NULL) { // Avoid null pointers
+            strcat(cmdString, args[i]); // Add the argument
+            strcat(cmdString, " ");    // Add a space between arguments
+        }
+    }
+
+    char destination_path[1024] = {0};
+    snprintf(destination_path, sizeof(destination_path), tupleFileByType[tuple_type], pc, pn);
+
+    // Construct the full command with the copy operation
+    char fullCommand[1024] = {0}; // Buffer for the full command
+    snprintf(fullCommand, sizeof(fullCommand), "%s&& cp Player-Data/%s %s", cmdString, destination_path, tuple_file);
+
+    // Prepare the args for execvp
+    char *cmd[] = {"/bin/bash", "-c", fullCommand, NULL};
+
     // Step 8: Execute ./Fake-Offline.x using execvp
-    execvp(args[0], args);
+    execvp("/bin/bash", cmd);
 
     // If execvp fails:
     perror("execvp failed");   

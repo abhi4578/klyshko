@@ -12,10 +12,10 @@ loader.insecure__use_host_env = true
 
 fs.mounts = [
   { path = "/lib", uri = "file:{{ gramine.runtimedir() }}" },
-  { path = "/kii-run", uri = "file:kii-run" },
-  { path = "/Player-Data/", uri="file:Player-Data/"},
-  { type = "encrypted", path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P0", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P0", key_name = "_sgx_mrenclave"},
-  { type = "encrypted", path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P1", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P1", key_name = "_sgx_mrenclave"},
+  { path = "/kii-run", uri = "file:kii-run", key_name = "_sgx_mrenclave" },
+  { type = "encrypted", path = "/Player-Data/", uri="file:Player-Data/"},
+#  { type = "encrypted", path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P0", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P0", key_name = "_sgx_mrenclave"},
+#  { type = "encrypted", path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P1", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P1", key_name = "_sgx_mrenclave"},
 #  { path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P0", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P0"},
 #  { path = "/Player-Data/2-p-128/Player-MAC-Keys-p-P1", uri="file:Player-Data/2-p-128/Player-MAC-Keys-p-P1"},
    { type = "encrypted", path = "/Player-Data/2-2-40/Player-MAC-Keys-2-P0", uri="file:Player-Data/2-2-40/Player-MAC-Keys-2-P0", key_name = "_sgx_mrenclave"},
@@ -29,7 +29,22 @@ fs.mounts = [
 #  { path = "/lib2/libssl.so.1.1", uri="file:/lib/x86_64-linux-gnu/libssl.so.1.1"},
 #  { path = "/lib2/libstdc++.so.6", uri="file:/lib/x86_64-linux-gnu/libstdc++.so.6"},
   { path = "/Fake-Offline.x", uri="file:Fake-Offline.x"},
-  { path = "/usr/local/lib", uri="file:/usr/local/lib/"}
+  { path = "/usr/local/lib", uri="file:/usr/local/lib/"},
+
+  # Add mounts for bash
+  { path = "/bin/bash", uri = "file:/bin/bash" },
+  # { path = "/usr/lib", uri = "file:/usr/lib" },
+  # { path = "/usr/lib64", uri = "file:/usr/lib64" },
+  { path = "/etc/bash.bashrc", uri = "file:/etc/bash.bashrc" },
+  { path = "/etc/profile", uri = "file:/etc/profile" },
+  # { path = "/home", uri = "file:/home" },
+
+  # Add mounts for cp command
+  { path = "/bin/cp", uri = "file:/bin/cp" },
+
+  # Add mount for kii
+  { path = "/kii", uri = "file:/kii/"}
+
 ]
 
 sgx.debug = true
@@ -50,6 +65,17 @@ sgx.trusted_files = [
   "file:/lib/x86_64-linux-gnu/libsodium.so.23",
   "file:/lib/x86_64-linux-gnu/libssl.so.1.1",
   "file:/lib/x86_64-linux-gnu/libstdc++.so.6",
+
+   # Add trusted files for bash
+  "file:/bin/bash",
+  "file:/etc/bash.bashrc",
+  "file:/etc/profile",
+  # "file:/usr/lib",
+  # "file:/usr/lib64",
+  # "file:/home",
+    "file:/bin/cp",
+    "file:/kii/"
+
 ]
 
 # Files that your program will access
@@ -57,4 +83,14 @@ sgx.allowed_files = [
     "file:./Player-Data",
 #    "file:./etc/kii",
     "file:/lib/x86_64-linux-gnu",
+    # Add allowed files for bash
+    "file:/bin/bash",
+    "file:/etc/bash.bashrc",
+    "file:/etc/profile",
+    # "file:/usr/lib",
+    # "file:/usr/lib64",
+    # "file:/home",
+      "file:/bin/cp",
+      "file:/kii/"
+
 ]
